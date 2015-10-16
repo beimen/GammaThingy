@@ -355,7 +355,7 @@ extern void SBSUndimScreen();
 + (void)disableRGB {
     NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
     [self wakeUpScreenIfNeeded];
-    [GammaController updateGammaWithStoredRGB];
+    [GammaController setGammaWithOrangeness:0];
     [defaults setObject:[NSDate date] forKey:@"lastAutoChangeDate"];
     [defaults setBool:NO forKey:@"enabled"];
     [defaults synchronize];
