@@ -17,4 +17,9 @@
 + (void)autoChangeOrangenessIfNeeded;
 + (BOOL)enabled;
 
++ (void)autoChangeRGBIfNeeded;
++ (void)updateGammaWithStoredRGB;
++ (void)enableRGB;
++ (void)disableRGB;
+
 @end

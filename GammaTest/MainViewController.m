@@ -12,7 +12,9 @@
 @interface MainViewController ()
 
 @property (weak, nonatomic) IBOutlet UISwitch *enabledSwitch;
-@property (weak, nonatomic) IBOutlet UISlider *orangeSlider;
+@property (weak, nonatomic) IBOutlet UISlider *redSlider;
+@property (weak, nonatomic) IBOutlet UISlider *greenSlider;
+@property (weak, nonatomic) IBOutlet UISlider *blueSlider;
 @property (weak, nonatomic) IBOutlet UISwitch *colorChangingEnabledSwitch;
 @property (weak, nonatomic) IBOutlet UITextField *startTimeTextField;
 @property (weak, nonatomic) IBOutlet UITextField *endTimeTextField;
@@ -22,7 +24,9 @@
 @implementation MainViewController
 
 @synthesize enabledSwitch;
-@synthesize orangeSlider;
+@synthesize redSlider;
+@synthesize greenSlider;
+@synthesize blueSlider;
 @synthesize colorChangingEnabledSwitch;
 @synthesize startTimeTextField;
 @synthesize endTimeTextField;
@@ -72,7 +76,9 @@
     NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
     
     enabledSwitch.on = [defaults boolForKey:@"enabled"];
-    orangeSlider.value = [defaults floatForKey:@"maxOrange"];
+    redSlider.value = [defaults floatForKey:@"maxRed"];
+    greenSlider.value = [defaults floatForKey:@"maxGreen"];
+    blueSlider.value = [defaults floatForKey:@"maxBlue"];
     colorChangingEnabledSwitch.on = [defaults boolForKey:@"colorChangingEnabled"];
     
     NSDate *date = [self dateForHour:[defaults integerForKey:@"autoStartHour"] andMinute:[defaults integerForKey:@"autoStartMinute"]];
@@ -84,27 +90,45 @@
 - (IBAction)enabledSwitchChanged:(UISwitch *)sender {
     NSLog(@"enabled: %lu",(unsigned long)sender.on);
     
-    if (sender.on)
-        [GammaController setGammaWithOrangeness:[[NSUserDefaults standardUserDefaults] floatForKey:@"maxOrange"]];
-    else
-        [GammaController setGammaWithOrangeness:0];
+    [self updateGammaIfNeeds];
     
     [[NSUserDefaults standardUserDefaults] setBool:sender.on forKey:@"enabled"];
 }
 
-- (IBAction)maxOrangeSliderChanged:(UISlider *)sender {
-    NSLog(@"maxOrange: %f",sender.value);
-    [[NSUserDefaults standardUserDefaults] setFloat:sender.value forKey:@"maxOrange"];
-    
-    if (enabledSwitch.on)
-        [GammaController setGammaWithOrangeness:sender.value];
+- (IBAction)maxRedSliderChanged:(UISlider *)sender {
+    NSLog(@"maxRed: %f",sender.value);
+    [[NSUserDefaults standardUserDefaults] setFloat:sender.value forKey:@"maxRed"];
+
+    [self updateGammaIfNeeds];
+}
+
+- (IBAction)maxGreenSliderChanged:(UISlider *)sender {
+    NSLog(@"maxGreen: %f",sender.value);
+    [[NSUserDefaults standardUserDefaults] setFloat:sender.value forKey:@"maxGreen"];
+
+    [self updateGammaIfNeeds];
+}
+
+- (IBAction)maxBlueSliderChanged:(UISlider *)sender {
+    NSLog(@"maxBlue: %f",sender.value);
+    [[NSUserDefaults standardUserDefaults] setFloat:sender.value forKey:@"maxBlue"];
+
+    [self updateGammaIfNeeds];
+}
+
+- (void)updateGammaIfNeeds {
+    if (enabledSwitch.on) {
+        [GammaController updateGammaWithStoredRGB];
+    } else {
+        [GammaController setGammaWithOrangeness:0];
+    }
 }
 
 - (IBAction)colorChangingEnabledSwitchChanged:(UISwitch *)sender {
     NSLog(@"colorChangingEnabled: %lu",(unsigned long)sender.on);
     [[NSUserDefaults standardUserDefaults] setBool:sender.on forKey:@"colorChangingEnabled"];
     [[NSUserDefaults standardUserDefaults] setObject:[NSDate distantPast] forKey:@"lastAutoChangeDate"];
-    [GammaController autoChangeOrangenessIfNeeded];
+    [GammaController autoChangeRGBIfNeeded];
 }
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -143,7 +167,7 @@
     [defaults setInteger:components.minute forKey:[defaultsKeyPrefix stringByAppendingString:@"Minute"]];
     
     [defaults setObject:[NSDate distantPast] forKey:@"lastAutoChangeDate"];
-    [GammaController autoChangeOrangenessIfNeeded];
+    [GammaController autoChangeRGBIfNeeded];
 }
 
 - (void)textFieldDidBeginEditing:(UITextField *)textField {

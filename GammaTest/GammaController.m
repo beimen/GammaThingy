@@ -267,6 +267,101 @@ extern void SBSUndimScreen();
     return [defaults boolForKey:@"enabled"];
 }
 
+#pragma mark - Appended
+
++ (void)autoChangeRGBIfNeeded {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    
+    if ([defaults boolForKey:@"enabled"]){
+        [self enableRGB];
+    }
+    
+    if (![defaults boolForKey:@"colorChangingEnabled"]) {
+        return;
+    }
+    
+    NSDate* now = [NSDate date];
+    
+    NSDateComponents *autoOnOffComponents = [[NSCalendar currentCalendar] components:(NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitDay | NSCalendarUnitHour | NSCalendarUnitMinute) fromDate:[NSDate date]];
+    
+    autoOnOffComponents.hour = [defaults integerForKey:@"autoStartHour"];
+    autoOnOffComponents.minute = [defaults integerForKey:@"autoStartMinute"];
+    NSDate* turnOnDate = [[NSCalendar currentCalendar] dateFromComponents:autoOnOffComponents];
+    
+    autoOnOffComponents.hour = [defaults integerForKey:@"autoEndHour"];
+    autoOnOffComponents.minute = [defaults integerForKey:@"autoEndMinute"];
+    NSDate *turnOffDate = [[NSCalendar currentCalendar] dateFromComponents:autoOnOffComponents];
+    
+    //special treatment for intervals wrapping around midnight needed
+    if ([turnOnDate isLaterThan:turnOffDate]) {
+        if ([now isEarlierThan:turnOnDate] && [now isEarlierThan:turnOffDate]) {
+            //Handles the case when we're in the early morning after midnight (before turnOffDate)
+            //__|______!__________I....................I________________|__//
+            //00:00   now    turnOffDate           turnOnDate         24:00//
+            //thus, we need to set the on date to yesterday to be able to correctly figure out stuff
+            autoOnOffComponents.day = autoOnOffComponents.day - 1;
+            turnOnDate = [[NSCalendar currentCalendar] dateFromComponents:autoOnOffComponents];
+        }else if ([turnOnDate isEarlierThan:now] && [turnOffDate isEarlierThan:now]) {
+            //Handles the case when we're in the night before midnight (after turnOnDate)
+            //__|_________________I....................I_________!______|__//
+            //00:00          turnOffDate           turnOnDate   now   24:00//
+            //thus, we need to set the off date to tomorrow to be able to correctly figure out stuff
+            autoOnOffComponents.day = autoOnOffComponents.day + 1;
+            turnOffDate = [[NSCalendar currentCalendar] dateFromComponents:autoOnOffComponents];
+        }
+    }
+    
+    NSLog(@"Last auto-change date: %@", [defaults objectForKey:@"lastAutoChangeDate"]);
+    
+    //Turns on or off the orange-ness
+    //Checks to make sure that the last auto-change was before the auto change time so it doesn't wake up the screen excessively
+    
+    //If the "turn on" date for today is in the past
+    //AND if the "turn off" date is in the future
+    //we're in the period the screen is supposed to be orange (whoa! inhuman conclusions!)
+    if ([turnOnDate isEarlierThan:now] && [turnOffDate isLaterThan:now]) {
+        NSLog(@"We're in the orange interval, considering switch to orange");
+        if ([turnOnDate isLaterThan:[defaults objectForKey:@"lastAutoChangeDate"]]) { //If the last auto-change date was before the turn on time today, then change colors
+            NSLog(@"Setting color orange");
+            [GammaController enableRGB];
+        }
+    } else {
+        NSLog(@"Orange times have either passed or are not quite here just yet, considering switch to normal");
+        if ([turnOffDate isLaterThan:[defaults objectForKey:@"lastAutoChangeDate"]]) {
+            NSLog(@"Setting color normal");
+            [GammaController disableRGB];
+        }
+    }
+    
+    [defaults setObject:[NSDate date] forKey:@"lastAutoChangeDate"];
+}
+
++ (void)updateGammaWithStoredRGB {
+    float red = [[[NSUserDefaults standardUserDefaults] valueForKey:@"maxRed"] floatValue];
+    float green = [[[NSUserDefaults standardUserDefaults] valueForKey:@"maxGreen"] floatValue];
+    float blue = [[[NSUserDefaults standardUserDefaults] valueForKey:@"maxBlue"] floatValue];
+    [GammaController setGammaWithRed:red green:green blue:blue];
+}
+
++ (void)enableRGB {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [self wakeUpScreenIfNeeded];
+    [GammaController updateGammaWithStoredRGB];
+    [defaults setObject:[NSDate date] forKey:@"lastAutoChangeDate"];
+    [defaults setBool:YES forKey:@"enabled"];
+    [defaults synchronize];
+}
+
++ (void)disableRGB {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [self wakeUpScreenIfNeeded];
+    [GammaController updateGammaWithStoredRGB];
+    [defaults setObject:[NSDate date] forKey:@"lastAutoChangeDate"];
+    [defaults setBool:NO forKey:@"enabled"];
+    [defaults synchronize];
+}
+
+
 @end
 
 

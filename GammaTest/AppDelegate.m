@@ -61,6 +61,9 @@ static NSString * const ShortcutDisable = @"Disable";
     [[NSUserDefaults standardUserDefaults] registerDefaults:@{
                                                               @"enabled": @NO,
                                                               @"maxOrange": [NSNumber numberWithFloat:0.7],
+                                                              @"maxRed": [NSNumber numberWithFloat:0.7],
+                                                              @"maxGreen": [NSNumber numberWithFloat:0.7],
+                                                              @"maxBlue": [NSNumber numberWithFloat:0.7],
                                                               @"colorChangingEnabled": @YES,
                                                               @"lastAutoChangeDate": [NSDate distantPast],
                                                               @"autoStartHour": @19,
@@ -74,14 +77,14 @@ static NSString * const ShortcutDisable = @"Disable";
         [self updateShortCutItem];
     }
     
-    [GammaController autoChangeOrangenessIfNeeded];
+    [GammaController autoChangeRGBIfNeeded];
     
     return YES;
 }
 
 - (void)application:(UIApplication *)application performFetchWithCompletionHandler:(void (^)(UIBackgroundFetchResult))completionHandler{
     NSLog(@"App woke with fetch request");
-    [GammaController autoChangeOrangenessIfNeeded];
+    [GammaController autoChangeRGBIfNeeded];
     completionHandler(UIBackgroundFetchResultNewData);
 }
 
@@ -93,17 +96,17 @@ static NSString * const ShortcutDisable = @"Disable";
         if ((enable = [dict objectForKey:@"enable"])) {
             if ([enable boolValue]) {
                 //gammathingy://orangeness/switch?enable=1
-                [GammaController enableOrangeness];
+                [GammaController enableRGB];
             } else {
                 //gammathingy://orangeness/switch?enable=0
-                [GammaController disableOrangeness];
+                [GammaController disableRGB];
             }
         } else {
             //gammathingy://orangeness/switch
             if ([[NSUserDefaults standardUserDefaults] boolForKey:@"enabled"]) {
-                [GammaController disableOrangeness];
+                [GammaController disableRGB];
             } else {
-                [GammaController enableOrangeness];
+                [GammaController enableRGB];
             }
         }
     }
